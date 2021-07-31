@@ -1,0 +1,268 @@
+CREATE SCHEMA `sns` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE TABLE `sns`.`user` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `firstName` VARCHAR(50) NULL DEFAULT NULL,
+  `middleName` VARCHAR(50) NULL DEFAULT NULL,
+  `lastName` VARCHAR(50) NULL DEFAULT NULL,
+  `username` VARCHAR(50) NULL DEFAULT NULL,
+  `mobile` VARCHAR(15) NULL,
+  `email` VARCHAR(50) NULL,
+  `passwordHash` VARCHAR(32) NOT NULL,
+  `registeredAt` DATETIME NOT NULL,
+  `lastLogin` DATETIME NULL DEFAULT NULL,
+  `intro` TINYTEXT NULL DEFAULT NULL,
+  `profile` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `uq_username` (`username` ASC),
+  UNIQUE INDEX `uq_mobile` (`mobile` ASC),
+  UNIQUE INDEX `uq_email` (`email` ASC) );
+  
+  -- Create user friend table 
+  CREATE TABLE `sns`.`user_friend` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `sourceId` BIGINT NOT NULL,
+  `targetId` BIGINT NOT NULL,
+  `type` SMALLINT NOT NULL DEFAULT 0,
+  `status` SMALLINT NOT NULL DEFAULT 0,
+  `createdAt` DATETIME NOT NULL,
+  `updatedAt` DATETIME NULL DEFAULT NULL,
+  `notes` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_friend_source` (`sourceId` ASC),
+  CONSTRAINT `fk_friend_source`
+    FOREIGN KEY (`sourceId`)
+    REFERENCES `sns`.`user` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+
+ALTER TABLE `sns`.`user_friend` 
+ADD INDEX `idx_friend_target` (`targetId` ASC);
+ALTER TABLE `sns`.`user_friend` 
+ADD CONSTRAINT `fk_friend_target`
+  FOREIGN KEY (`targetId`)
+  REFERENCES `sns`.`user` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+ALTER TABLE `sns`.`user_friend` ADD UNIQUE `uq_friend`(`sourceId`, `targetId`);
+  -- End
+
+-- User follower table
+
+CREATE TABLE `sns`.`user_follower` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `sourceId` BIGINT NOT NULL,
+  `targetId` BIGINT NOT NULL,
+  `type` SMALLINT NOT NULL DEFAULT 0,
+  `createdAt` DATETIME NOT NULL,
+  `updatedAt` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_ufollower_source` (`sourceId` ASC),
+  CONSTRAINT `fk_ufollower_source`
+    FOREIGN KEY (`sourceId`)
+    REFERENCES `sns`.`user` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+
+ALTER TABLE `sns`.`user_follower` 
+ADD INDEX `idx_ufollower_target` (`targetId` ASC);
+ALTER TABLE `sns`.`user_follower` 
+ADD CONSTRAINT `fk_ufollower_target`
+  FOREIGN KEY (`targetId`)
+  REFERENCES `sns`.`user` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+
+ALTER TABLE `sns`.`user_follower` ADD UNIQUE `uq_ufollower`(`sourceId`, `targetId`, `type`);
+-- End
+
+-- User Message Table   
+CREATE TABLE `sns`.`user_message` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `sourceId` BIGINT NOT NULL,
+  `targetId` BIGINT NOT NULL,
+  `message` TINYTEXT NULL DEFAULT NULL,
+  `createdAt` DATETIME NOT NULL,
+  `updatedAt` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_umessage_source` (`sourceId` ASC),
+  CONSTRAINT `fk_umessage_source`
+    FOREIGN KEY (`sourceId`)
+    REFERENCES `sns`.`user` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+
+ALTER TABLE `sns`.`user_message` 
+ADD INDEX `idx_umessage_target` (`targetId` ASC);
+ALTER TABLE `sns`.`user_message` 
+ADD CONSTRAINT `fk_umessage_target`
+  FOREIGN KEY (`targetId`)
+  REFERENCES `sns`.`user` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+-- End
+-- --------------------------------------
+-- User Post Table cheyyanam
+-- --------------------------------------   
+
+-- Group 
+CREATE TABLE `sns`.`group` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `createdBy` BIGINT NOT NULL,
+  `updatedBy` BIGINT NOT NULL,
+  `title` VARCHAR(75) NOT NULL,
+  `metaTitle` VARCHAR(100) NULL,
+  `slug` VARCHAR(100) NOT NULL,
+  `summary` TINYTEXT NULL,
+  `status` SMALLINT NOT NULL DEFAULT 0,
+  `createdAt` DATETIME NOT NULL,
+  `updatedAt` DATETIME NULL DEFAULT NULL,
+  `profile` TEXT NULL DEFAULT NULL,
+  `content` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE INDEX `uq_slug` (`slug` ASC),
+  INDEX `idx_group_creator` (`createdBy` ASC),
+  CONSTRAINT `fk_group_creator`
+    FOREIGN KEY (`createdBy`)
+    REFERENCES `sns`.`user` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+
+ALTER TABLE `sns`.`group` 
+ADD INDEX `idx_group_modifier` (`updatedBy` ASC);
+ALTER TABLE `sns`.`group` 
+ADD CONSTRAINT `fk_group_modifier`
+  FOREIGN KEY (`updatedBy`)
+  REFERENCES `sns`.`user` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+  -- End
+  
+-- Group Meta collections
+
+CREATE TABLE `sns`.`group_meta` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `groupId` BIGINT NOT NULL,
+  `key` VARCHAR(50) NOT NULL,
+  `content` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_meta_group` (`groupId` ASC),
+  UNIQUE INDEX `uq_meta_group` (`groupId` ASC, `key` ASC),
+  CONSTRAINT `fk_meta_group`
+    FOREIGN KEY (`groupId`)
+    REFERENCES `sns`.`group` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB; 
+
+-- End
+
+-- Group member 
+CREATE TABLE `sns`.`group_member` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `groupId` BIGINT NOT NULL,
+  `userId` BIGINT NOT NULL,
+  `type` SMALLINT NOT NULL DEFAULT 0,
+  `status` SMALLINT NOT NULL DEFAULT 0,
+  `createdAt` DATETIME NOT NULL,
+  `updatedAt` DATETIME NULL DEFAULT NULL,
+  `notes` TEXT NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_member_group` (`groupId` ASC),
+  CONSTRAINT `fk_member_group`
+    FOREIGN KEY (`groupId`)
+    REFERENCES `sns`.`group` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+
+ALTER TABLE `sns`.`group_member` 
+ADD INDEX `idx_member_user` (`userId` ASC);
+ALTER TABLE `sns`.`group_member` 
+ADD CONSTRAINT `fk_member_user`
+  FOREIGN KEY (`userId`)
+  REFERENCES `sns`.`user` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+ALTER TABLE `sns`.`group_member` ADD UNIQUE `uq_friend`(`groupId`, `userId`);
+-- End
+-- Group Follower Table
+CREATE TABLE `sns`.`group_follower` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `groupId` BIGINT NOT NULL,
+  `userId` BIGINT NOT NULL,
+  `type` SMALLINT NOT NULL DEFAULT 0,
+  `createdAt` DATETIME NOT NULL,
+  `updatedAt` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_gfollower_group` (`groupId` ASC),
+  CONSTRAINT `fk_gfollower_group`
+    FOREIGN KEY (`groupId`)
+    REFERENCES `sns`.`group` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+
+ALTER TABLE `sns`.`group_follower` 
+ADD INDEX `idx_gfollower_user` (`userId` ASC);
+ALTER TABLE `sns`.`group_follower` 
+ADD CONSTRAINT `fk_gfollower_user`
+  FOREIGN KEY (`userId`)
+  REFERENCES `sns`.`user` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+ALTER TABLE `sns`.`group_follower` ADD UNIQUE `uq_friend`(`groupId`, `userId`, `type`);  
+
+-- Group Message Table
+CREATE TABLE `sns`.`group_message` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `groupId` BIGINT NOT NULL,
+  `userId` BIGINT NOT NULL,
+  `message` TINYTEXT NULL DEFAULT NULL,
+  `createdAt` DATETIME NOT NULL,
+  `updatedAt` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_gmessage_group` (`groupId` ASC),
+  CONSTRAINT `fk_gmessage_group`
+    FOREIGN KEY (`groupId`)
+    REFERENCES `sns`.`group` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+
+ALTER TABLE `sns`.`group_message` 
+ADD INDEX `idx_gmessage_user` (`userId` ASC);
+ALTER TABLE `sns`.`group_message` 
+ADD CONSTRAINT `fk_gmessage_user`
+  FOREIGN KEY (`userId`)
+  REFERENCES `sns`.`user` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION; 
+  -- End
+  -- Group Post Table
+  
+  CREATE TABLE `sns`.`group_post` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `groupId` BIGINT NOT NULL,
+  `userId` BIGINT NOT NULL,
+  `message` TINYTEXT NULL DEFAULT NULL,
+  `createdAt` DATETIME NOT NULL,
+  `updatedAt` DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_gpost_group` (`groupId` ASC),
+  CONSTRAINT `fk_gpost_group`
+    FOREIGN KEY (`groupId`)
+    REFERENCES `sns`.`group` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION);
+
+ALTER TABLE `sns`.`group_post` 
+ADD INDEX `idx_gpost_user` (`userId` ASC);
+ALTER TABLE `sns`.`group_post` 
+ADD CONSTRAINT `fk_gpost_user`
+  FOREIGN KEY (`userId`)
+  REFERENCES `sns`.`user` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+  -- End 
